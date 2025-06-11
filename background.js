@@ -35,6 +35,10 @@ async function captureFullPage(tabId, settings) {
         });
         await sleep(500);
         
+        // Obtenir la hauteur du header fixe
+        const headerHeight = await getFixedHeaderHeight(tabId);
+        console.log(`Detected fixed header height: ${headerHeight}px`);
+
         // 2. Obtenir dimensions
         const results = await chrome.scripting.executeScript({
             target: { tabId: tabId },
@@ -97,7 +101,7 @@ async function captureFullPage(tabId, settings) {
         }
         
         // 4. Assembler les images (méthode corrigée)
-        const finalImage = await assembleImagesFixed(captures, totalHeight);
+        const finalImage = await assembleImagesFixed(captures, totalHeight, headerHeight, viewportHeight);
         
         // 5. Convertir selon format demandé
         const processedImage = await convertFormat(finalImage, settings);
@@ -122,47 +126,88 @@ async function captureFullPage(tabId, settings) {
     }
 }
 
-// ASSEMBLAGE AVEC createImageBitmap (compatible service workers)
-async function assembleImagesFixed(captures, totalHeight) {
+// ASSEMBLAGE AVEC createImageBitmap (compatible service workers) - MODIFIÉ POUR HEADER FIXE
+async function assembleImagesFixed(captures, totalHeight, headerHeight, viewportHeight) {
     try {
-        // Créer un canvas offscreen
-        const canvas = new OffscreenCanvas(1920, totalHeight);
-        const ctx = canvas.getContext('2d');
-        
-        // Traiter chaque capture
-        for (let i = 0; i < captures.length; i++) {
-            const capture = captures[i];
-            
-            // Convertir dataURL en blob
+        if (!captures || captures.length === 0) {
+            throw new Error("Aucune capture fournie pour l'assemblage.");
+        }
+
+        // 1. Préparer les informations des images
+        const imageInfos = [];
+        for (const capture of captures) {
             const response = await fetch(capture.dataUrl);
             const blob = await response.blob();
-            
-            // Créer ImageBitmap (compatible service worker)
-            const imageBitmap = await createImageBitmap(blob);
-            
-            // Ajuster la largeur du canvas avec la première image
-            if (i === 0) {
-                canvas.width = imageBitmap.width;
+            const bitmap = await createImageBitmap(blob);
+            imageInfos.push({ bitmap, width: bitmap.width, height: bitmap.height });
+        }
+
+        if (imageInfos.length === 0) { // Double vérification, devrait être couvert par le premier if
+            throw new Error("Échec de la préparation des ImageBitmaps.");
+        }
+
+        // 2. Calculer la hauteur finale du canvas
+        let finalCanvasHeight = imageInfos[0].height;
+        for (let i = 1; i < imageInfos.length; i++) {
+            const imageHeight = imageInfos[i].height;
+            const contentHeight = headerHeight > 0 ? imageHeight - headerHeight : imageHeight;
+            if (contentHeight > 0) {
+                finalCanvasHeight += contentHeight;
             }
-            
-            // Dessiner l'image à sa position
-            ctx.drawImage(imageBitmap, 0, capture.y);
-            
-            console.log(`Image ${i + 1}/${captures.length} assemblée`);
         }
         
-        // Convertir en blob puis dataURL
+        if (finalCanvasHeight <= 0) {
+            throw new Error(`La hauteur calculée du canvas final est de ${finalCanvasHeight}px. Elle doit être positive.`);
+        }
+
+        // 3. Créer le canvas et dessiner les images
+        const canvasWidth = imageInfos[0].width; // Supposer que toutes les captures ont la même largeur
+        const canvas = new OffscreenCanvas(canvasWidth, finalCanvasHeight);
+        const ctx = canvas.getContext('2d');
+
+        let currentYOnCanvas = 0;
+
+        // Dessiner la première image (complète)
+        ctx.drawImage(imageInfos[0].bitmap, 0, currentYOnCanvas);
+        console.log(`Image 1/${imageInfos.length} (complète) dessinée sur le canvas à y=${currentYOnCanvas}`);
+        currentYOnCanvas += imageInfos[0].height;
+
+        // Dessiner les images suivantes (rognées si headerHeight > 0)
+        for (let i = 1; i < imageInfos.length; i++) {
+            const imgInfo = imageInfos[i];
+
+            if (headerHeight > 0) {
+                const sourceX = 0;
+                const sourceY = headerHeight;
+                const sourceWidth = imgInfo.width;
+                const sourceHeight = imgInfo.height - headerHeight;
+
+                if (sourceHeight > 0) {
+                    ctx.drawImage(imgInfo.bitmap, sourceX, sourceY, sourceWidth, sourceHeight, 0, currentYOnCanvas, sourceWidth, sourceHeight);
+                    console.log(`Image ${i + 1}/${imageInfos.length} (rognée de ${headerHeight}px) dessinée sur le canvas à y=${currentYOnCanvas}`);
+                    currentYOnCanvas += sourceHeight;
+                } else {
+                    console.log(`Image ${i + 1}/${imageInfos.length} sautée (pas de contenu sous le header de ${headerHeight}px).`);
+                }
+            } else { // Pas de header, dessiner l'image complète
+                ctx.drawImage(imgInfo.bitmap, 0, currentYOnCanvas);
+                console.log(`Image ${i + 1}/${imageInfos.length} (complète) dessinée sur le canvas à y=${currentYOnCanvas}`);
+                currentYOnCanvas += imgInfo.height;
+            }
+        }
+
+        // 4. Convertir en blob puis dataURL
         const finalBlob = await canvas.convertToBlob({ type: 'image/png' });
-        
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error("Erreur de FileReader lors de la conversion en dataURL."));
             reader.readAsDataURL(finalBlob);
         });
-        
+
     } catch (error) {
-        console.error('Erreur assemblage:', error);
-        throw new Error('Erreur lors de l\'assemblage des images');
+        console.error('Erreur assemblage (modifié):', error);
+        throw new Error('Erreur lors de l\'assemblage des images (modifié): ' + error.message);
     }
 }
 
@@ -250,6 +295,46 @@ async function showNotification(message) {
         });
     } catch (error) {
         console.log('Notification:', message);
+    }
+}
+
+// Fonction pour trouver la hauteur du header fixe
+async function getFixedHeaderHeight(tabId) {
+    try {
+        const results = await chrome.scripting.executeScript({
+            target: { tabId: tabId },
+            func: () => {
+                // This function is injected into the target tab
+                const fixedElements = Array.from(document.querySelectorAll('*'));
+                let maxHeaderHeight = 0;
+                fixedElements.forEach(el => {
+                    const style = getComputedStyle(el);
+                    if (style.position === 'fixed' &&
+                        parseInt(style.top, 10) === 0 &&
+                        el.offsetHeight > 0 &&
+                        style.visibility !== 'hidden' &&
+                        style.display !== 'none') {
+
+                        // Basic check: if top:0 and position:fixed, consider it.
+                        // More complex scenarios (e.g. multiple overlapping fixed elements)
+                        // might require more sophisticated checks here.
+                        maxHeaderHeight = Math.max(maxHeaderHeight, el.offsetHeight);
+                    }
+                });
+                return maxHeaderHeight;
+            }
+        });
+        // executeScript returns an array of results, one for each frame the script was injected into.
+        // We are interested in the main frame's result.
+        if (results && results[0] && typeof results[0].result === 'number') {
+            console.log('Fixed header height found:', results[0].result);
+            return results[0].result;
+        }
+        console.log('No fixed header found or invalid result:', results);
+        return 0;
+    } catch (error) {
+        console.error('Error getting fixed header height:', error);
+        return 0; // Return 0 in case of error
     }
 }
 
