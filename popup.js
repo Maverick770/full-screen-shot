@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const qualitySlider = document.getElementById('quality');
     const qualityValue = document.getElementById('qualityValue');
     const formatRadios = document.querySelectorAll('input[name="format"]');
-    
+    const galleryBtn = document.getElementById('galleryBtn');
+
     let isCapturing = false;
     let currentTab = null;
     
@@ -48,12 +49,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupEvents() {
         // Capture
         captureBtn.addEventListener('click', handleCapture);
-        
+
+        // Galerie
+        if (galleryBtn) {
+            galleryBtn.addEventListener('click', () => {
+                chrome.tabs.create({ url: 'gallery.html' });
+            });
+        }
+
         // Format
         formatRadios.forEach(radio => {
             radio.addEventListener('change', handleFormatChange);
         });
-        
+
         // Qualité
         if (qualitySlider) {
             qualitySlider.addEventListener('input', function() {

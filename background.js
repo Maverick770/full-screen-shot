@@ -1,7 +1,10 @@
-// background.js - Extension CaptureEcran 
+// background.js - Extension CaptureEcran
 // VERSION AVEC CAPTURE COMPLETE CORRIGEE
 
 console.log('CaptureEcran - Service Worker démarré');
+
+// Importer le module DB
+importScripts('db.js');
 
 // Installation
 chrome.runtime.onInstalled.addListener((details) => {
@@ -101,18 +104,33 @@ async function captureFullPage(tabId, settings) {
         
         // 5. Convertir selon format demandé
         const processedImage = await convertFormat(finalImage, settings);
-        
+
         // 6. Télécharger
         const tab = await chrome.tabs.get(tabId);
         const filename = generateFilename(tab.title, settings.format);
         await downloadFile(processedImage, filename);
-        
-        // 7. Remonter en haut
+
+        // 7. Sauvegarder dans IndexedDB
+        try {
+            await saveToHistory(processedImage, {
+                title: tab.title,
+                url: tab.url,
+                filename: filename,
+                format: settings.format,
+                quality: settings.quality
+            });
+            console.log('Capture sauvegardée dans l\'historique');
+        } catch (error) {
+            console.error('Erreur sauvegarde historique:', error);
+            // Ne pas bloquer si sauvegarde historique échoue
+        }
+
+        // 8. Remonter en haut
         await chrome.scripting.executeScript({
             target: { tabId: tabId },
             func: () => window.scrollTo(0, 0)
         });
-        
+
         console.log('=== CAPTURE TERMINÉE ===');
         return { success: true, filename };
         
@@ -264,6 +282,73 @@ function generateFilename(title, format) {
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// SAUVEGARDE DANS L'HISTORIQUE
+async function saveToHistory(dataUrl, metadata) {
+    try {
+        // Générer miniature pour la galerie
+        const thumbnail = await generateThumbnail(dataUrl);
+
+        const screenshot = {
+            dataUrl: dataUrl,
+            thumbnail: thumbnail,
+            title: metadata.title,
+            url: metadata.url,
+            filename: metadata.filename,
+            format: metadata.format,
+            quality: metadata.quality,
+            timestamp: Date.now(),
+            size: Math.round(dataUrl.length * 0.75) // Estimation taille en bytes
+        };
+
+        await self.screenshotDB.add(screenshot);
+
+        // Nettoyer l'historique (garder seulement les 100 dernières captures)
+        await self.screenshotDB.cleanup(100);
+
+    } catch (error) {
+        console.error('Erreur saveToHistory:', error);
+        throw error;
+    }
+}
+
+// GÉNÉRATION DE MINIATURE
+async function generateThumbnail(dataUrl, maxWidth = 300) {
+    try {
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        const imageBitmap = await createImageBitmap(blob);
+
+        // Calculer dimensions miniature
+        const scale = maxWidth / imageBitmap.width;
+        const thumbWidth = maxWidth;
+        const thumbHeight = Math.round(imageBitmap.height * scale);
+
+        // Créer canvas miniature
+        const canvas = new OffscreenCanvas(thumbWidth, thumbHeight);
+        const ctx = canvas.getContext('2d');
+
+        // Dessiner image redimensionnée
+        ctx.drawImage(imageBitmap, 0, 0, thumbWidth, thumbHeight);
+
+        // Convertir en JPEG pour réduire la taille
+        const thumbBlob = await canvas.convertToBlob({
+            type: 'image/jpeg',
+            quality: 0.7
+        });
+
+        // Convertir en dataURL
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(thumbBlob);
+        });
+
+    } catch (error) {
+        console.error('Erreur génération miniature:', error);
+        return dataUrl; // Fallback : utiliser l'image complète
+    }
 }
 
 console.log('CaptureEcran - Version complète corrigée prête');
