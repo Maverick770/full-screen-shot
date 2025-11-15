@@ -29,10 +29,16 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0);
             z-index: 2147483647;
             cursor: crosshair;
+            transition: background 0.3s ease;
         `;
+
+        // Fade in effect
+        setTimeout(() => {
+            overlay.style.background = 'rgba(0, 0, 0, 0.3)';
+        }, 10);
 
         // Créer le rectangle de sélection
         selectionBox = document.createElement('div');
@@ -97,7 +103,14 @@
             height: 100%;
             z-index: 2147483647;
             cursor: crosshair;
+            opacity: 0;
+            transition: opacity 0.2s ease;
         `;
+
+        // Fade in effect
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+        }, 10);
 
         // Créer le highlight
         currentHighlight = document.createElement('div');

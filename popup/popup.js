@@ -140,10 +140,42 @@
      */
     async function handleCapture(mode) {
         try {
-            showProgress('Préparation...');
+            // Ajouter un effet visuel au bouton cliqué
+            highlightButton(mode);
+
+            // Pour les modes sélection et élément, ne pas fermer le popup
+            if (mode === 'selection' || mode === 'element') {
+                const modeText = mode === 'selection' ? 'Sélectionnez une zone sur la page' : 'Cliquez sur un élément à capturer';
+                showInfo(modeText);
+
+                // Envoyer la demande
+                const response = await chrome.runtime.sendMessage({
+                    action: 'capture',
+                    mode: mode,
+                    tabId: currentTab.id,
+                    settings: settings
+                });
+
+                if (response.success && response.pending) {
+                    // Fermer le popup pour laisser l'utilisateur interagir avec la page
+                    setTimeout(() => window.close(), 500);
+                    return;
+                }
+            }
+
+            showProgress('Initialisation...', 10);
             disableButtons();
 
             console.log(`📸 Capture ${mode} démarrée`);
+
+            // Animation de progression
+            let progressValue = 10;
+            const progressInterval = setInterval(() => {
+                if (progressValue < 90) {
+                    progressValue += 5;
+                    elements.progressFill.style.width = progressValue + '%';
+                }
+            }, 100);
 
             // Envoyer la demande au background
             const response = await chrome.runtime.sendMessage({
@@ -153,8 +185,14 @@
                 settings: settings
             });
 
+            clearInterval(progressInterval);
+
             if (response.success) {
-                showSuccess('Capture réussie !');
+                showProgress('Finalisation...', 100);
+
+                setTimeout(() => {
+                    showSuccess('Capture réussie ! ✓');
+                }, 300);
 
                 // Mettre à jour les stats
                 await loadStats();
@@ -164,8 +202,9 @@
                     if (!settings.openEditor) {
                         window.close();
                     }
-                }, 1000);
+                }, 1500);
             } else {
+                clearInterval(progressInterval);
                 throw new Error(response.error || 'Erreur inconnue');
             }
 
@@ -283,10 +322,10 @@
     /**
      * Afficher la progression
      */
-    function showProgress(text) {
+    function showProgress(text, percentage = 30) {
         elements.progressSection.style.display = 'block';
         elements.progressText.textContent = text;
-        elements.progressFill.style.width = '50%';
+        elements.progressFill.style.width = percentage + '%';
         elements.statusMessage.style.display = 'none';
     }
 
@@ -337,6 +376,26 @@
         setTimeout(() => {
             elements.statusMessage.style.display = 'none';
         }, 3000);
+    }
+
+    /**
+     * Ajouter un effet visuel au bouton cliqué
+     */
+    function highlightButton(mode) {
+        const buttonMap = {
+            'full': elements.btnFullPage,
+            'visible': elements.btnVisible,
+            'selection': elements.btnSelection,
+            'element': elements.btnElement
+        };
+
+        const button = buttonMap[mode];
+        if (button) {
+            button.classList.add('loading');
+            setTimeout(() => {
+                button.classList.remove('loading');
+            }, 2000);
+        }
     }
 
     /**
