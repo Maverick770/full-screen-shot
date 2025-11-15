@@ -1,0 +1,161 @@
+/**
+ * CaptureEcran Pro - Editor Styles
+ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary: #4A90E2;
+    --primary-dark: #357ABD;
+    --dark: #2C3E50;
+    --light: #ECF0F1;
+    --border: #DDD;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #F0F0F0;
+    overflow: hidden;
+}
+
+.editor-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* ===== HEADER ===== */
+.header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.logo h1 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: white;
+    color: var(--primary);
+}
+
+.btn-primary:hover {
+    background: var(--light);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* ===== TOOLBAR ===== */
+.toolbar {
+    background: white;
+    padding: 16px 24px;
+    display: flex;
+    gap: 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+.tool-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.tool-btn {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--border);
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.tool-btn:hover {
+    border-color: var(--primary);
+    background: rgba(74, 144, 226, 0.05);
+}
+
+.tool-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.tool-btn svg {
+    stroke: currentColor;
+}
+
+.color-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.color-picker input[type="color"] {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* ===== CANVAS ===== */
+.canvas-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    padding: 20px;
+}
+
+#canvas {
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: white;
+    cursor: crosshair;
+}
+
+/* ===== INFO BAR ===== */
+.info-bar {
+    background: white;
+    padding: 12px 24px;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+    color: #666;
+}

@@ -1,0 +1,30 @@
+{
+  "extensionName": {
+    "message": "CaptureEcran Pro - Capture & Annotation",
+    "description": "Nom de l'extension"
+  },
+  "extensionDescription": {
+    "message": "Extension professionnelle de capture d'écran : capture complète, sélection, annotations, historique et export multi-formats",
+    "description": "Description de l'extension"
+  },
+  "captureFullPage": {
+    "message": "Capturer la page complète",
+    "description": "Capture complète de la page"
+  },
+  "captureVisible": {
+    "message": "Capturer la zone visible",
+    "description": "Capture de la zone visible"
+  },
+  "captureSelection": {
+    "message": "Sélectionner une zone",
+    "description": "Sélection personnalisée"
+  },
+  "captureElement": {
+    "message": "Capturer un élément",
+    "description": "Capture d'un élément spécifique"
+  },
+  "openHistory": {
+    "message": "Ouvrir l'historique",
+    "description": "Ouvrir l'historique des captures"
+  }
+}
