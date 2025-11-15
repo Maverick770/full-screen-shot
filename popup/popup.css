@@ -35,6 +35,7 @@ body {
 
 .container {
     padding: 0;
+    animation: fadeIn 0.2s ease-out;
 }
 
 /* ===== HEADER ===== */
@@ -82,6 +83,22 @@ section {
     padding: 20px;
     background: white;
     margin-bottom: 2px;
+    animation: fadeInUp 0.3s ease-out backwards;
+}
+
+section:nth-child(2) { animation-delay: 0.05s; }
+section:nth-child(3) { animation-delay: 0.1s; }
+section:nth-child(4) { animation-delay: 0.15s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 section h2 {
@@ -146,6 +163,11 @@ section h2 {
     color: var(--primary);
     position: relative;
     z-index: 1;
+    transition: var(--transition);
+}
+
+.mode-btn:hover svg {
+    transform: scale(1.1);
 }
 
 .mode-btn span {
@@ -153,6 +175,7 @@ section h2 {
     color: var(--dark);
     position: relative;
     z-index: 1;
+    transition: var(--transition);
 }
 
 .mode-btn small {
@@ -160,6 +183,11 @@ section h2 {
     color: #999;
     position: relative;
     z-index: 1;
+    transition: var(--transition);
+}
+
+.mode-btn:hover small {
+    color: var(--primary);
 }
 
 /* ===== OPTIONS ===== */
@@ -206,12 +234,20 @@ section h2 {
 .format-btn:hover {
     border-color: var(--primary);
     background: rgba(74, 144, 226, 0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2);
 }
 
 .format-btn.active {
-    background: var(--primary);
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     border-color: var(--primary);
     color: white;
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+}
+
+.format-btn.active:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
 }
 
 /* Slider */
@@ -261,10 +297,13 @@ section h2 {
     cursor: pointer;
     transition: var(--transition);
     margin-bottom: 8px;
+    border: 1px solid transparent;
 }
 
 .checkbox-label:hover {
     background: rgba(74, 144, 226, 0.05);
+    border-color: rgba(74, 144, 226, 0.2);
+    transform: translateX(2px);
 }
 
 .checkbox-label:last-child {
@@ -303,16 +342,49 @@ section h2 {
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(74, 144, 226, 0.1);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.action-btn:hover::before {
+    width: 200px;
+    height: 200px;
 }
 
 .action-btn:hover {
     border-color: var(--primary);
     color: var(--primary);
     background: rgba(74, 144, 226, 0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2);
+}
+
+.action-btn:active {
+    transform: translateY(0);
 }
 
 .action-btn svg {
     color: inherit;
+    position: relative;
+    z-index: 1;
+    transition: var(--transition);
+}
+
+.action-btn:hover svg {
+    transform: rotate(10deg);
 }
 
 /* ===== PROGRESS ===== */
@@ -334,8 +406,35 @@ section h2 {
     height: 100%;
     background: linear-gradient(90deg, var(--primary), var(--primary-dark));
     border-radius: 3px;
-    transition: width 0.3s ease;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     width: 0%;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
 }
 
 .progress-text {
@@ -352,22 +451,29 @@ section h2 {
     text-align: center;
     font-weight: 500;
     font-size: 13px;
-    animation: slideDown 0.3s ease;
+    animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left: 4px solid transparent;
 }
 
 .status-message.success {
-    background: var(--success);
+    background: linear-gradient(135deg, #5CB85C, #4CAF50);
     color: white;
+    border-left-color: #4CAF50;
+    box-shadow: 0 2px 8px rgba(92, 184, 92, 0.3);
 }
 
 .status-message.error {
-    background: var(--danger);
+    background: linear-gradient(135deg, #D9534F, #E53935);
     color: white;
+    border-left-color: #C62828;
+    box-shadow: 0 2px 8px rgba(217, 83, 79, 0.3);
 }
 
 .status-message.info {
-    background: var(--primary);
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: white;
+    border-left-color: var(--primary-dark);
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
 }
 
 /* ===== FOOTER ===== */
@@ -384,11 +490,24 @@ section h2 {
 
 .stats {
     font-weight: 600;
-    color: var(--dark);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stats::before {
+    content: '📊';
+    font-size: 14px;
 }
 
 .version {
     font-family: monospace;
+    color: #999;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
 }
 
 /* ===== ANIMATIONS ===== */
@@ -415,19 +534,38 @@ section h2 {
 /* ===== LOADING STATE ===== */
 .mode-btn:disabled,
 .action-btn:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
+    transform: scale(0.98);
+}
+
+.mode-btn.loading {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-color: var(--primary);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.mode-btn.loading svg,
+.mode-btn.loading span,
+.mode-btn.loading small {
+    color: white;
+    position: relative;
+    z-index: 1;
+}
+
+.mode-btn.loading::before {
+    opacity: 1;
 }
 
 .mode-btn.loading::after {
     content: '';
     position: absolute;
     top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 2px solid var(--primary);
+    right: 10px;
+    width: 16px;
+    height: 16px;
+    margin-top: -8px;
+    border: 2px solid white;
     border-top-color: transparent;
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
@@ -436,6 +574,15 @@ section h2 {
 @keyframes spin {
     to {
         transform: rotate(360deg);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(74, 144, 226, 0);
     }
 }
 
